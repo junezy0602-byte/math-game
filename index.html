@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🍄 数学大冒险 Ultimate</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    text-align:center;
+    background:linear-gradient(#5c94fc,#87ceeb);
+    color:white;
+}
+
+#topbar{
+    font-size:18px;
+    padding:10px;
+    background:rgba(0,0,0,0.3);
+}
+
+.level-btn{
+    font-size:20px;
+    padding:15px 20px;
+    margin:10px;
+    border-radius:12px;
+    border:none;
+}
+
+.card{
+    width:90%;
+    max-width:420px;
+    margin:40px auto;
+    padding:20px;
+    border-radius:20px;
+    background:white;
+    color:black;
+}
+
+input{
+    font-size:26px;
+    padding:15px;
+    width:90%;
+    margin-top:15px;
+}
+
+.submit-btn{
+    margin-top:10px;
+    font-size:20px;
+    padding:12px 25px;
+    border:none;
+    border-radius:10px;
+}
+
+#combo{
+    font-size:24px;
+    color:yellow;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🍄 数学大冒险</h1>
+
+<button class="level-btn" onclick="startGame(1)">Level 1</button>
+<button class="level-btn" onclick="startGame(2)">Level 2</button>
+<button class="level-btn" onclick="startGame(3)">Level 3</button>
+
+<div id="game" style="display:none;">
+    <div id="topbar"></div>
+    <div id="combo"></div>
+
+    <div class="card">
+        <div id="question"></div>
+
+        <input id="answer" inputmode="numeric">
+        <button class="submit-btn" onclick="check()">提交</button>
+    </div>
+</div>
+
+<script>
+
+// ===== DOM =====
+let topbar, question, answer, comboDiv;
+
+window.onload = function(){
+    topbar = document.getElementById("topbar");
+    question = document.getElementById("question");
+    answer = document.getElementById("answer");
+    comboDiv = document.getElementById("combo");
+
+    // 电脑Enter
+    answer.addEventListener("keydown", function(e){
+        if(e.key === "Enter"){
+            check();
+        }
+    });
+
+    // 手机音频解锁
+    document.body.addEventListener("click",()=>{
+        ctx.resume();
+    },{once:true});
+};
+
+// ===== 音频 =====
+const ctx = new (window.AudioContext||window.webkitAudioContext)();
+let started=false;
+
+function playTone(freq){
+    let o=ctx.createOscillator();
+    let g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value=freq;
+    g.gain.value=0.05;
+    o.start();
+    o.stop(ctx.currentTime+0.1);
+}
+
+function startBGM(){
+    if(started) return;
+    started=true;
+
+    setInterval(()=>{
+        playTone(300+Math.random()*400);
+    },300);
+}
+
+// ===== 状态 =====
+let name="",level=1,score=0,lives=3,combo=0;
+let timeLeft=0,timer=null,currentQ;
+
+// ===== 开始 =====
+function startGame(l){
+    name = prompt("输入名字");
+    if(!name) return;
+
+    startBGM();
+
+    level=l;
+    document.getElementById("game").style.display="block";
+
+    reset();
+    next();
+}
+
+// ===== 时间 =====
+function getTime(){
+    return level===1?30:level===2?20:15;
+}
+
+function startTimer(){
+    clearInterval(timer);
+    timeLeft=getTime();
+    updateUI();
+
+    timer=setInterval(()=>{
+        timeLeft--;
+        updateUI();
+
+        if(timeLeft<=0){
+            clearInterval(timer);
+            combo=0;
+            next();
+        }
+    },1000);
+}
+
+// ===== 工具 =====
+function rand(max){return Math.floor(Math.random()*max);}
+
+// ===== 题型 =====
+function genCompare(max){
+    let a=rand(max), b=rand(max);
+    let askBig=Math.random()<0.5;
+
+    return {
+        q: askBig
+            ? `比较大小\n${a} 和 ${b}，谁大？`
+            : `比较大小\n${a} 和 ${b}，谁小？`,
+        answer: askBig?String(Math.max(a,b)):String(Math.min(a,b))
+    };
+}
+
+function genOrder(max){
+    let nums=[rand(max),rand(max),rand(max)];
+    let sorted=[...nums].sort((a,b)=>a-b);
+    let asc=Math.random()<0.5;
+
+    return {
+        q: asc
+            ? `从小到大排列：\n${nums.join(" , ")}`
+            : `从大到小排列：\n${nums.join(" , ")}`,
+        answer: asc?sorted.join(","):sorted.reverse().join(",")
+    };
+}
+
+function genPattern(max){
+    let s=rand(max/2),step=rand(5)+1;
+
+    return {
+        q:`找规律\n${s}, ${s+step}, ${s+2*step}, ?`,
+        answer:String(s+3*step)
+    };
+}
+
+function genQ(){
+    let max=level===1?100:level===2?1000:10000;
+    let types=[genCompare,genOrder,genPattern];
+    return types[Math.floor(Math.random()*3)](max);
+}
+
+// ===== 下一题 =====
+function next(){
+    currentQ=genQ();
+    question.innerHTML=currentQ.q.replace(/\n/g,"<br>");
+    answer.value="";
+    answer.focus();
+    startTimer();
+}
+
+// ===== 判题 =====
+function normalize(s){
+    return s.replace(/，/g,",").replace(/\s+/g,",")
+    .split(",").map(x=>x.trim()).filter(x=>x).join(",");
+}
+
+function check(){
+
+    clearInterval(timer);
+
+    let correct=normalize(answer.value)===normalize(currentQ.answer);
+
+    if(correct){
+        score+=5;
+        combo++;
+        comboDiv.innerText="🔥 x"+combo;
+        playTone(800);
+    }else{
+        combo=0;
+        lives--;
+        playTone(200);
+    }
+
+    updateUI();
+
+    if(lives<=0){
+        alert("游戏结束！");
+        location.reload();
+        return;
+    }
+
+    setTimeout(next,300);
+}
+
+// ===== UI =====
+function updateUI(){
+    topbar.innerText=`🪙${score} | ⏱️${timeLeft}s | ❤️${lives}`;
+}
+
+// ===== 重置 =====
+function reset(){
+    score=0;
+    lives=3;
+    combo=0;
+}
+
+</script>
+
+</body>
+</html>
