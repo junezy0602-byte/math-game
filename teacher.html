@@ -3,32 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <title>📊 教学分析系统</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 body{
     font-family:Arial;
-    background:#eef2ff;
+    background:#f2f4f8;
     text-align:center;
+    margin:0;
+}
+
+h1{
+    margin:20px;
 }
 
 .card{
+    width:90%;
+    max-width:420px;
+    margin:15px auto;
+    padding:20px;
+    border-radius:15px;
     background:white;
-    padding:15px;
-    margin:10px auto;
-    max-width:500px;
-    border-radius:12px;
-    box-shadow:0 5px 15px rgba(0,0,0,0.2);
     text-align:left;
-}
-
-.weak{color:red;font-weight:bold;}
-.good{color:green;}
-
-.summary{
-    background:#fff3cd;
-    padding:15px;
-    border-radius:10px;
-    margin:20px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.2);
 }
 </style>
 </head>
@@ -36,91 +33,107 @@ body{
 <body>
 
 <h1>📊 教学分析</h1>
-
-<div id="summary"></div>
-<div id="list">加载中...</div>
+<div id="classWeak"></div>
+<div id="list"></div>
 
 <script>
 
 const DB="https://y1-3-math-prt-1-default-rtdb.asia-southeast1.firebasedatabase.app/records.json";
-
-const map={
-    compare:"比较",
-    order:"排序",
-    pattern:"规律"
-};
-
-function analyze(s){
-
-    let result=[];
-
-    for(let k in s){
-        if(!s[k]||s[k].t===0) continue;
-
-        let rate=s[k].c/s[k].t;
-
-        if(rate<0.5){
-            result.push(`${map[k]}弱(${Math.round(rate*100)}%)`);
-        }
-    }
-
-    return result.length?result.join(" / "):"表现均衡";
-}
-
-function classWeak(data){
-
-    let count={compare:0,order:0,pattern:0};
-
-    for(let id in data){
-        let s=data[id].stats;
-        if(!s) continue;
-
-        for(let k in s){
-            if(!s[k]||s[k].t===0) continue;
-
-            let rate=s[k].c/s[k].t;
-            if(rate<0.5) count[k]++;
-        }
-    }
-
-    let worst=Object.entries(count).sort((a,b)=>b[1]-a[1])[0];
-
-    return worst[1]===0?"全班良好":"全班最弱："+map[worst[0]];
-}
 
 async function load(){
 
     let res=await fetch(DB);
     let data=await res.json();
 
-    if(!data){
-        list.innerHTML="无数据";
-        return;
-    }
-
-    summary.innerText=classWeak(data);
+    if(!data) return;
 
     let html="";
+    let classStats={
+        compare:0,
+        order:0,
+        pattern:0,
+        add:0,
+        sub:0
+    };
 
-    for(let id in data){
+    Object.values(data).forEach(d=>{
 
-        let d=data[id];
+        let name=d.name || "匿名";
+
+        // ✅ 防炸
+        let correct=d.correct ?? 0;
+        let total=d.total ?? 0;
+
+        let stats=d.stats || {};
+
+        let compare=getRate(stats,"compare");
+        let order=getRate(stats,"order");
+        let pattern=getRate(stats,"pattern");
+        let add=getRate(stats,"add");
+        let sub=getRate(stats,"sub");
+
+        // ===== 统计全班 =====
+        classStats.compare+=compare;
+        classStats.order+=order;
+        classStats.pattern+=pattern;
+        classStats.add+=add;
+        classStats.sub+=sub;
+
+        // ===== 找最弱 =====
+        let map={
+            "比较":compare,
+            "排序":order,
+            "规律":pattern,
+            "加法":add,
+            "减法":sub
+        };
+
+        let weakKey=Object.keys(map).reduce((a,b)=>map[a]<map[b]?a:b);
+
+        let weakText = total===0
+        ? "👉 无数据"
+        : (map[weakKey] < 0.5
+            ? `👉 ${weakKey}弱 (${Math.round(map[weakKey]*100)}%)`
+            : "👉 表现均衡");
 
         html+=`
         <div class="card">
-        <b>${d.name}</b><br>
-        分数：${d.score}<br>
-        正确：${d.correct}/${d.total}<br>
-        👉 ${analyze(d.stats)}
+            <b>${name}</b><br>
+            分数：${d.score ?? 0}<br>
+            正确：${correct}/${total}<br>
+            ${weakText}
         </div>
         `;
-    }
+    });
 
-    list.innerHTML=html;
+    // ===== 全班最弱 =====
+    let avgWeak=Object.keys(classStats).reduce((a,b)=>classStats[a]<classStats[b]?a:b);
+
+    document.getElementById("classWeak").innerHTML=
+    `<h3>👉 全班最弱：${translate(avgWeak)}</h3>`;
+
+    document.getElementById("list").innerHTML=html;
+}
+
+// ===== 工具 =====
+function getRate(stats,key){
+    if(!stats[key] || stats[key].t===0) return 0;
+    return stats[key].c / stats[key].t;
+}
+
+function translate(k){
+    return {
+        compare:"比较",
+        order:"排序",
+        pattern:"规律",
+        add:"加法",
+        sub:"减法"
+    }[k];
 }
 
 load();
 
 </script>
+
 </body>
 </html>
