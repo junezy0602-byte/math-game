@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>🍄 数学大冒险 Ultimate</title>
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -13,11 +14,13 @@ body{
     background:linear-gradient(#5c94fc,#87ceeb);
     color:white;
 }
+
 #topbar{
     padding:10px;
     font-size:18px;
     background:rgba(0,0,0,0.3);
 }
+
 .level-btn{
     font-size:20px;
     padding:15px 25px;
@@ -26,6 +29,7 @@ body{
     border-radius:15px;
     background:white;
 }
+
 .card{
     width:90%;
     max-width:420px;
@@ -34,13 +38,9 @@ body{
     border-radius:20px;
     background:white;
     color:black;
+    box-shadow:0 10px 30px rgba(0,0,0,0.3);
 }
-#question{
-    font-size:20px;
-    margin-bottom:15px;
-    line-height:1.5;
-    white-space:pre-line;
-}
+
 input{
     width:90%;
     padding:12px;
@@ -48,6 +48,7 @@ input{
     border-radius:10px;
     border:2px solid #ccc;
 }
+
 .submit-btn{
     margin-top:10px;
     padding:10px 20px;
@@ -57,6 +58,7 @@ input{
     background:#4CAF50;
     color:white;
 }
+
 #combo{
     font-size:20px;
     margin:10px;
@@ -67,7 +69,8 @@ input{
 
 <body>
 
-<audio id="bgm" loop>
+<!-- 🎵 音乐 -->
+<audio id="bgm" loop preload="auto">
   <source src="bgm.mp3" type="audio/mpeg">
 </audio>
 
@@ -83,13 +86,15 @@ input{
     <div id="combo"></div>
 
     <div class="card">
-        <div id="question"></div>
+        <div id="question" style="font-size:20px;margin-bottom:10px;white-space:pre-line;"></div>
+
         <input id="answer" placeholder="输入答案">
+
         <br>
         <button class="submit-btn" onclick="check()">提交</button>
 
         <div style="font-size:13px;color:#666;margin-top:5px;">
-        👉 不用打逗号
+        👉 不用打逗号，直接输入数字
         </div>
     </div>
 </div>
@@ -97,24 +102,32 @@ input{
 <script>
 
 // ===== Firebase =====
-const DB="https://y1-3-math-prt-1-default-rtdb.asia-southeast1.firebasedatabase.app/records";
+const DB_URL="https://y1-3-math-prt-1-default-rtdb.asia-southeast1.firebasedatabase.app/records.json";
 
 // ===== 状态 =====
 let name="",level=1,score=0,lives=3,timeLeft=0,timer;
-let currentQ,combo=0,stats;
+let currentQ,combo=0;
 
-// ===== 音乐（手机兼容）=====
+// ===== 🎵 音乐 =====
+let audioStarted=false;
+
 function playMusic(){
+    if(audioStarted) return;
+
     const bgm=document.getElementById("bgm");
 
-    function start(){
-        bgm.play().catch(()=>{});
-        document.removeEventListener("click",start);
-        document.removeEventListener("touchstart",start);
+    function startAudio(){
+        bgm.play().then(()=>{
+            audioStarted=true;
+            document.removeEventListener("click",startAudio);
+            document.removeEventListener("touchstart",startAudio);
+        }).catch(()=>{});
     }
 
-    document.addEventListener("click",start);
-    document.addEventListener("touchstart",start);
+    document.addEventListener("click",startAudio);
+    document.addEventListener("touchstart",startAudio);
+
+    startAudio();
 }
 
 // ===== 开始 =====
@@ -122,29 +135,23 @@ function startGame(l){
     playMusic();
 
     name=prompt("输入名字");
-
-    // ✅ 防垃圾数据（已整合）
-    if(!name || name.trim()==="" || name==="."){
-        alert("请输入正确名字");
-        return;
-    }
-
-    name = name.trim();
+    if(!name) return;
 
     level=l;
-    home.style.display="none";
-    game.style.display="block";
+    document.getElementById("home").style.display="none";
+    document.getElementById("game").style.display="block";
 
     reset();
-    next();
+    next(); // ⭐ 改这里（不先开timer）
 }
 
-// ===== 时间（每题）=====
+// ===== ⏱ 时间（已修改）=====
 function getTime(){
-    return level==1?25:level==2?18:15;
+    return level==1 ? 45 :
+           level==2 ? 30 :
+           25;
 }
 
-// ===== 计时 =====
 function startTimer(){
     clearInterval(timer);
     timeLeft=getTime();
@@ -167,46 +174,43 @@ function rand(max){return Math.floor(Math.random()*max);}
 function genCompare(max){
     let a=rand(max),b=rand(max);
     return{
-        type:"compare",
-        q:`比较大小：\n${a} 和 ${b} 谁大？`,
-        a:String(Math.max(a,b))
-    };
+        q:`比较大小：${a} 和 ${b} 谁大？`,
+        answer:String(Math.max(a,b))
+    }
 }
 
 function genOrder(max){
-    let nums=[rand(max),rand(max),rand(max)];
+    let nums=Array.from({length:3},()=>rand(max));
     let sorted=[...nums].sort((a,b)=>a-b);
     let asc=Math.random()<0.5;
 
     return{
-        type:"order",
-        q: asc
-        ? `从小到大排列：\n\n${nums.join(" , ")}`
-        : `从大到小排列：\n\n${nums.join(" , ")}`,
-        a: asc
-        ? sorted.join(",")
-        : sorted.reverse().join(",")
-    };
+        q:asc
+        ? `从小到大排列：\n${nums.join(" , ")}`
+        : `从大到小排列：\n${nums.join(" , ")}`,
+        answer:asc?sorted.join(","):sorted.reverse().join(",")
+    }
 }
 
-function genPattern(){
-    let start=rand(50),step=rand(5)+1;
+function genPattern(max){
+    let start=rand(50);
+    let step=rand(5)+1;
+
     return{
-        type:"pattern",
-        q:`找规律：\n${start} , ${start+step} , ${start+2*step} , ?`,
-        a:String(start+3*step)
-    };
+        q:`找规律：${start} , ${start+step} , ${start+2*step} , ?`,
+        answer:String(start+3*step)
+    }
 }
 
 function genAdd(max){
     let a=rand(max/2),b=rand(max/2);
-    return{type:"add",q:`${a} + ${b}`,a:String(a+b)};
+    return{q:`计算：${a} + ${b}`,answer:String(a+b)}
 }
 
 function genSub(max){
     let a=rand(max),b=rand(max);
     if(a<b)[a,b]=[b,a];
-    return{type:"sub",q:`${a} - ${b}`,a:String(a-b)};
+    return{q:`计算：${a} - ${b}`,answer:String(a-b)}
 }
 
 function genQ(){
@@ -215,34 +219,33 @@ function genQ(){
     return list[rand(list.length)](max);
 }
 
-// ===== 下一题 =====
+// ===== 下一题（⭐关键：每题重置时间）=====
 function next(){
-    clearInterval(timer);
+
+    startTimer(); // ⭐ 每一题重新计时
 
     currentQ=genQ();
-    question.innerText=currentQ.q;
-    answer.value="";
-
-    startTimer();
+    document.getElementById("question").innerText=currentQ.q;
+    document.getElementById("answer").value="";
 }
 
 // ===== 输入处理 =====
 function normalize(s){
-    return s.replace(/[^0-9]/g,",").split(",").filter(x=>x).join(",");
+    return s.replace(/[^0-9]/g,",")
+        .split(",")
+        .map(x=>x.trim())
+        .filter(x=>x)
+        .join(",");
 }
 
 // ===== 判题 =====
 function check(){
-    let ok=normalize(answer.value)==normalize(currentQ.a);
+    let input=normalize(answer.value);
+    let correct=normalize(currentQ.answer);
 
-    stats.total++;
-    stats[currentQ.type].t++;
-
-    if(ok){
+    if(input===correct){
         score+=5;
         combo++;
-        stats.correct++;
-        stats[currentQ.type].c++;
     }else{
         combo=0;
         lives--;
@@ -250,19 +253,26 @@ function check(){
 
     updateUI();
 
-    if(lives<=0){endGame();return;}
+    if(lives<=0){
+        endGame();
+        return;
+    }
+
     next();
 }
 
 // ===== Enter =====
-answer.addEventListener("keydown",e=>{
+document.getElementById("answer").addEventListener("keydown",e=>{
     if(e.key==="Enter") check();
 });
 
 // ===== UI =====
 function updateUI(){
-    topbar.innerText=`🍄 ${name} | ⭐${score} | ⏱${timeLeft}s | ❤️${lives}`;
-    combo.innerText=combo>=2?`🔥 x${combo}`:"";
+    document.getElementById("topbar").innerText=
+    `🍄 ${name} | ⭐${score} | ⏱${timeLeft}s | ❤️${lives}`;
+
+    document.getElementById("combo").innerText=
+    combo>=2?`🔥 x${combo}`:"";
 }
 
 // ===== 重置 =====
@@ -270,16 +280,6 @@ function reset(){
     score=0;
     lives=3;
     combo=0;
-
-    stats={
-        compare:{c:0,t:0},
-        order:{c:0,t:0},
-        pattern:{c:0,t:0},
-        add:{c:0,t:0},
-        sub:{c:0,t:0},
-        total:0,
-        correct:0
-    };
 }
 
 // ===== 结束 =====
@@ -292,17 +292,10 @@ function endGame(){
 
 // ===== 上传 =====
 async function saveData(){
-    let id=name.toLowerCase();
-
-    await fetch(`${DB}/${id}.json`,{
-        method:"PUT",
+    await fetch(DB_URL,{
+        method:"POST",
         body:JSON.stringify({
-            name,
-            score,
-            correct:stats.correct,
-            total:stats.total,
-            stats,
-            time:new Date().toLocaleString()
+            name,score,time:new Date().toLocaleString()
         })
     });
 }
