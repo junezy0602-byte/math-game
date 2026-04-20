@@ -10,27 +10,66 @@ body{
     margin:0;
     font-family:Arial;
     text-align:center;
-    background:linear-gradient(#5c94fc,#87ceeb);
     color:white;
+    overflow-x:hidden;
+
+    background:
+        linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)),
+        url("bg.jpg");
+
+    background-size:cover;
+    background-position:center;
+    background-attachment:fixed;
 }
+
+/* ⭐ 云朵动画 */
+.cloud{
+    position:fixed;
+    top:0;
+    width:200px;
+    opacity:0.7;
+    animation:cloudMove 60s linear infinite;
+}
+
+.cloud:nth-child(1){ top:50px; left:-200px; animation-duration:60s;}
+.cloud:nth-child(2){ top:150px; left:-300px; animation-duration:80s;}
+.cloud:nth-child(3){ top:250px; left:-250px; animation-duration:70s;}
+
+@keyframes cloudMove{
+    from{ transform:translateX(0);}
+    to{ transform:translateX(120vw);}
+}
+
+/* ⭐ 标题浮动 */
+@keyframes float{
+    0%{transform:translateY(0);}
+    50%{transform:translateY(-10px);}
+    100%{transform:translateY(0);}
+}
+
 #topbar{
     padding:10px;
     font-size:18px;
     background:rgba(0,0,0,0.3);
 }
+
 .level-btn{
     font-size:20px;
-    padding:15px 25px;
-    margin:10px;
+    padding:18px 30px;
+    margin:15px;
     border:none;
-    border-radius:15px;
+    border-radius:20px;
     background:white;
-    transition:0.2s;
+    box-shadow:0 8px 20px rgba(0,0,0,0.2);
+    transition:all 0.2s;
 }
+
 .level-btn:hover{
-    transform:scale(1.1);
+    transform:translateY(-5px) scale(1.05);
+    box-shadow:0 15px 30px rgba(0,0,0,0.3);
     cursor:pointer;
 }
+
 .card{
     width:90%;
     max-width:420px;
@@ -41,6 +80,7 @@ body{
     color:black;
     box-shadow:0 10px 30px rgba(0,0,0,0.3);
 }
+
 input{
     width:90%;
     padding:12px;
@@ -48,6 +88,7 @@ input{
     border-radius:10px;
     border:2px solid #ccc;
 }
+
 .submit-btn{
     margin-top:10px;
     padding:10px 20px;
@@ -57,6 +98,7 @@ input{
     background:#4CAF50;
     color:white;
 }
+
 #combo{
     font-size:20px;
     margin:10px;
@@ -67,43 +109,56 @@ input{
 
 <body>
 
+<!-- ⭐ 云朵（不用图片，直接emoji稳定） -->
+<div class="cloud">☁️☁️☁️</div>
+<div class="cloud">☁️☁️</div>
+<div class="cloud">☁️☁️☁️☁️</div>
+
 <audio id="bgm" loop preload="auto">
   <source src="bgm.mp3" type="audio/mpeg">
 </audio>
 
-<!-- ⭐⭐⭐ 只改这里（封面升级）⭐⭐⭐ -->
-<div id="home" style="padding-top:40px;">
+<!-- ⭐ 封面 -->
+<div id="home" style="padding-top:70px;">
 
-    <h1 style="font-size:34px;">🍄 数学大冒险</h1>
+    <h1 style="
+        font-size:42px;
+        text-shadow:0 5px 20px rgba(0,0,0,0.5);
+        animation:float 3s infinite;
+    ">
+        🍄 数学大冒险
+    </h1>
 
-    <p style="font-size:18px;margin:10px 0;">
-        ⚡ 数学反应挑战开始！
+    <p style="font-size:20px;margin-top:10px;">
+        ⚡ 数学反应挑战
     </p>
 
-    <p style="font-size:15px;">
-        你能在时间内答对多少题？
+    <p style="font-size:16px;opacity:0.9;margin-bottom:30px;">
+        看看你能答对多少题！
     </p>
 
-    <div style="margin-top:25px;">
+    <div>
         <button class="level-btn" onclick="startGame(1)">
-            🟢 新手挑战
+            🟢 新手挑战<br>
+            <span style="font-size:14px;color:#666;">轻松开始</span>
         </button>
 
         <button class="level-btn" onclick="startGame(2)">
-            🔵 进阶挑战
+            🔵 进阶挑战<br>
+            <span style="font-size:14px;color:#666;">速度提升</span>
         </button>
 
         <button class="level-btn" onclick="startGame(3)">
-            🔴 大师挑战
+            🔴 大师挑战<br>
+            <span style="font-size:14px;color:#666;">极限挑战</span>
         </button>
     </div>
 
-    <div style="margin-top:25px;font-size:14px;color:#eee;">
+    <div style="margin-top:40px;font-size:15px;">
         ⏱ 限时作答 &nbsp;&nbsp; ❤️ 3次机会 &nbsp;&nbsp; 🔥 连击加分
     </div>
 
 </div>
-<!-- ⭐⭐⭐ 封面结束 ⭐⭐⭐ -->
 
 <div id="game" style="display:none;">
     <div id="topbar"></div>
