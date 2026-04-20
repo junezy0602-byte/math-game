@@ -2,13 +2,13 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>📊 教学分析系统</title>
+<title>📊 教学分析</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 body{
     font-family:Arial;
-    background:#f2f4f8;
+    background:#f4f6f9;
     text-align:center;
     margin:0;
 }
@@ -24,8 +24,26 @@ h1{
     padding:20px;
     border-radius:15px;
     background:white;
-    text-align:left;
     box-shadow:0 5px 15px rgba(0,0,0,0.2);
+    text-align:left;
+}
+
+.delete-btn{
+    margin-top:10px;
+    background:red;
+    color:white;
+    border:none;
+    padding:6px 12px;
+    border-radius:8px;
+}
+
+.clear-btn{
+    margin:15px;
+    background:black;
+    color:white;
+    border:none;
+    padding:10px 15px;
+    border-radius:10px;
 }
 </style>
 </head>
@@ -33,22 +51,29 @@ h1{
 <body>
 
 <h1>📊 教学分析</h1>
-<div id="classWeak"></div>
+<div id="weak"></div>
+
+<button class="clear-btn" onclick="clearAll()">🗑 清空全部数据</button>
+
 <div id="list"></div>
 
 <script>
 
-const DB="https://y1-3-math-prt-1-default-rtdb.asia-southeast1.firebasedatabase.app/records.json";
+const DB="https://y1-3-math-prt-1-default-rtdb.asia-southeast1.firebasedatabase.app/records";
 
+// ===== 读取数据 =====
 async function load(){
 
-    let res=await fetch(DB);
+    let res=await fetch(DB+".json");
     let data=await res.json();
 
-    if(!data) return;
+    if(!data){
+        list.innerHTML="暂无数据";
+        return;
+    }
 
     let html="";
-    let classStats={
+    let weakCount={
         compare:0,
         order:0,
         pattern:0,
@@ -56,81 +81,108 @@ async function load(){
         sub:0
     };
 
-    Object.values(data).forEach(d=>{
+    Object.values(data).forEach(s=>{
 
-        let name=d.name || "匿名";
+        // ❗过滤垃圾数据
+        if(!s.name || s.name==="." || s.name.trim()==="") return;
 
-        // ✅ 防炸
-        let correct=d.correct ?? 0;
-        let total=d.total ?? 0;
+        let weak="无数据";
 
-        let stats=d.stats || {};
+        if(s.stats){
 
-        let compare=getRate(stats,"compare");
-        let order=getRate(stats,"order");
-        let pattern=getRate(stats,"pattern");
-        let add=getRate(stats,"add");
-        let sub=getRate(stats,"sub");
+            let rates=[];
 
-        // ===== 统计全班 =====
-        classStats.compare+=compare;
-        classStats.order+=order;
-        classStats.pattern+=pattern;
-        classStats.add+=add;
-        classStats.sub+=sub;
+            for(let k in s.stats){
+                if(k==="total"||k==="correct") continue;
 
-        // ===== 找最弱 =====
-        let map={
-            "比较":compare,
-            "排序":order,
-            "规律":pattern,
-            "加法":add,
-            "减法":sub
-        };
+                let t=s.stats[k].t;
+                let c=s.stats[k].c;
 
-        let weakKey=Object.keys(map).reduce((a,b)=>map[a]<map[b]?a:b);
+                if(t>0){
+                    let wrong=(t-c)/t;
+                    rates.push({type:k,rate:wrong});
+                }
+            }
 
-        let weakText = total===0
-        ? "👉 无数据"
-        : (map[weakKey] < 0.5
-            ? `👉 ${weakKey}弱 (${Math.round(map[weakKey]*100)}%)`
-            : "👉 表现均衡");
+            if(rates.length>0){
+                rates.sort((a,b)=>b.rate-a.rate);
+                weak=rates[0].type+"弱 ("+Math.round(rates[0].rate*100)+"%)";
+
+                weakCount[rates[0].type]++;
+            }
+        }
 
         html+=`
         <div class="card">
-            <b>${name}</b><br>
-            分数：${d.score ?? 0}<br>
-            正确：${correct}/${total}<br>
-            ${weakText}
+            <b>${s.name}</b><br>
+            分数：${s.score||0}<br>
+            正确：${s.correct||0}/${s.total||0}<br>
+            👉 ${weak}
+
+            <br>
+            <button class="delete-btn" onclick="deleteStudent('${s.name}')">
+            删除
+            </button>
         </div>
         `;
     });
 
+    list.innerHTML=html;
+
     // ===== 全班最弱 =====
-    let avgWeak=Object.keys(classStats).reduce((a,b)=>classStats[a]<classStats[b]?a:b);
+    let worst="无数据";
+    let max=0;
 
-    document.getElementById("classWeak").innerHTML=
-    `<h3>👉 全班最弱：${translate(avgWeak)}</h3>`;
+    for(let k in weakCount){
+        if(weakCount[k]>max){
+            max=weakCount[k];
+            worst=k;
+        }
+    }
 
-    document.getElementById("list").innerHTML=html;
+    weak.innerHTML=`👉 全班最弱：${translate(worst)}`;
 }
 
-// ===== 工具 =====
-function getRate(stats,key){
-    if(!stats[key] || stats[key].t===0) return 0;
-    return stats[key].c / stats[key].t;
+// ===== 删除单个 =====
+async function deleteStudent(name){
+
+    if(!confirm("确定删除这个学生？")) return;
+
+    let id=name.toLowerCase();
+
+    await fetch(`${DB}/${id}.json`,{
+        method:"DELETE"
+    });
+
+    alert("已删除");
+    location.reload();
 }
 
-function translate(k){
+// ===== 清空全部 =====
+async function clearAll(){
+
+    if(!confirm("⚠️ 确定清空全部数据？")) return;
+
+    await fetch(DB+".json",{
+        method:"DELETE"
+    });
+
+    alert("已清空");
+    location.reload();
+}
+
+// ===== 翻译 =====
+function translate(t){
     return {
         compare:"比较",
         order:"排序",
         pattern:"规律",
         add:"加法",
         sub:"减法"
-    }[k];
+    }[t]||"无数据";
 }
 
+// ===== 启动 =====
 load();
 
 </script>
