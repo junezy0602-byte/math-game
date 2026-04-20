@@ -15,14 +15,12 @@ body{
     color:white;
 }
 
-/* 顶部 */
 #topbar{
     padding:10px;
     font-size:18px;
     background:rgba(0,0,0,0.3);
 }
 
-/* Level */
 .level-btn{
     font-size:20px;
     padding:15px 25px;
@@ -32,7 +30,6 @@ body{
     background:white;
 }
 
-/* 卡片 */
 .card{
     width:90%;
     max-width:420px;
@@ -72,9 +69,9 @@ input{
 
 <body>
 
-<!-- 🎵 音乐 -->
+<!-- ✅ 本地音乐 -->
 <audio id="bgm" loop preload="auto">
-<source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_115b9b3b3c.mp3">
+  <source src="bgm.mp3" type="audio/mpeg">
 </audio>
 
 <div id="home">
@@ -127,6 +124,7 @@ function playMusic(){
         }).catch(()=>{});
     }
 
+    // iPhone 必须
     document.addEventListener("click",startAudio);
     document.addEventListener("touchstart",startAudio);
 
@@ -135,7 +133,7 @@ function playMusic(){
 
 // ===== 开始 =====
 function startGame(l){
-    playMusic();
+    playMusic(); // ⭐关键
 
     name=prompt("输入名字");
     if(!name) return;
@@ -173,7 +171,6 @@ function rand(max){return Math.floor(Math.random()*max);}
 
 // ===== 题型 =====
 
-// 比较
 function genCompare(max){
     let a=rand(max),b=rand(max);
     return{
@@ -182,7 +179,6 @@ function genCompare(max){
     }
 }
 
-// 排序（清晰版）
 function genOrder(max){
     let nums=Array.from({length:3},()=>rand(max));
     let sorted=[...nums].sort((a,b)=>a-b);
@@ -197,7 +193,6 @@ function genOrder(max){
     }
 }
 
-// 规律
 function genPattern(max){
     let start=rand(50);
     let step=rand(5)+1;
@@ -208,26 +203,17 @@ function genPattern(max){
     }
 }
 
-// 加法
 function genAdd(max){
     let a=rand(max/2),b=rand(max/2);
-    return{
-        q:`计算：${a} + ${b}`,
-        answer:String(a+b)
-    }
+    return{q:`计算：${a} + ${b}`,answer:String(a+b)}
 }
 
-// 减法
 function genSub(max){
     let a=rand(max),b=rand(max);
     if(a<b)[a,b]=[b,a];
-    return{
-        q:`计算：${a} - ${b}`,
-        answer:String(a-b)
-    }
+    return{q:`计算：${a} - ${b}`,answer:String(a-b)}
 }
 
-// ===== 总题库 =====
 function genQ(){
     let max=level==1?100:level==2?1000:10000;
     let list=[genCompare,genOrder,genPattern,genAdd,genSub];
@@ -241,7 +227,7 @@ function next(){
     document.getElementById("answer").value="";
 }
 
-// ===== 手机输入处理 =====
+// ===== 输入处理 =====
 function normalize(s){
     return s.replace(/[^0-9]/g,",")
         .split(",")
@@ -250,7 +236,7 @@ function normalize(s){
         .join(",");
 }
 
-// ===== 判定 =====
+// ===== 判题 =====
 function check(){
     let input=normalize(answer.value);
     let correct=normalize(currentQ.answer);
@@ -273,7 +259,7 @@ function check(){
     next();
 }
 
-// ===== Enter 支持 =====
+// ===== Enter =====
 document.getElementById("answer").addEventListener("keydown",e=>{
     if(e.key==="Enter") check();
 });
