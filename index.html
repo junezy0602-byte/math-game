@@ -15,7 +15,7 @@ body{
 
     background:
         linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)),
-        url("bg.jpg");
+        url("https://junezy0602-byte.github.io/math-game/bg.jpg");
 
     background-size:cover;
     background-position:center;
@@ -115,11 +115,7 @@ input{
 </audio>
 
 <div id="home" style="padding-top:70px;">
-    <h1 style="
-        font-size:42px;
-        text-shadow:0 5px 20px rgba(0,0,0,0.5);
-        animation:float 3s infinite;
-    ">
+    <h1 style="font-size:42px;text-shadow:0 5px 20px rgba(0,0,0,0.5);animation:float 3s infinite;">
         🍄 数学大冒险
     </h1>
 
@@ -132,24 +128,13 @@ input{
     </p>
 
     <div>
-        <button class="level-btn" onclick="startGame(1)">
-            🟢 新手挑战<br>
-            <span style="font-size:14px;color:#666;">轻松开始</span>
-        </button>
-
-        <button class="level-btn" onclick="startGame(2)">
-            🔵 进阶挑战<br>
-            <span style="font-size:14px;color:#666;">速度提升</span>
-        </button>
-
-        <button class="level-btn" onclick="startGame(3)">
-            🔴 大师挑战<br>
-            <span style="font-size:14px;color:#666;">极限挑战</span>
-        </button>
+        <button class="level-btn" onclick="startGame(1)">🟢 新手挑战</button>
+        <button class="level-btn" onclick="startGame(2)">🔵 进阶挑战</button>
+        <button class="level-btn" onclick="startGame(3)">🔴 大师挑战</button>
     </div>
 
     <div style="margin-top:40px;font-size:15px;">
-        ⏱ 限时作答 &nbsp;&nbsp; ❤️ 3次机会 &nbsp;&nbsp; 🔥 连击加分
+        ⏱ 限时作答 ❤️ 3次机会 🔥 连击加分
     </div>
 </div>
 
@@ -162,7 +147,6 @@ input{
         <input id="answer" placeholder="输入答案">
         <br>
         <button class="submit-btn" onclick="check()">提交</button>
-
         <div style="font-size:13px;color:#666;margin-top:5px;">
         👉 不用打逗号，直接输入数字
         </div>
@@ -171,42 +155,29 @@ input{
 
 <script>
 
-// ===== Firebase =====
 const DB_URL="https://y1-3-math-prt-1-default-rtdb.asia-southeast1.firebasedatabase.app/records.json";
 
-// ===== 状态 =====
 let name="",level=1,score=0,lives=3,timeLeft=0,timer;
-let currentQ,combo=0;
-let lastCompareType=null;
-let qIndex=0;
-let stats;
+let currentQ,combo=0,lastCompareType=null,qIndex=0,stats;
 
-// ===== 🎯 修复 Enter（只加这一段）=====
-document.addEventListener("keydown", function(e){
-    if(e.key === "Enter"){
-        check();
-    }
+// ✅ Enter 键
+document.addEventListener("keydown",e=>{
+    if(e.key==="Enter") check();
 });
 
-// ===== 音乐 =====
+// 🎵 音乐
 let audioStarted=false;
 function playMusic(){
     if(audioStarted) return;
     const bgm=document.getElementById("bgm");
-
-    function start(){
-        bgm.play().catch(()=>{});
-        document.removeEventListener("click",start);
-    }
-    document.addEventListener("click",start);
+    document.addEventListener("click",()=>bgm.play(),{once:true});
 }
 
-// ===== 开始 =====
+// 开始
 function startGame(l){
     playMusic();
-
     name=prompt("输入名字");
-    if(!name || name.trim()==="") return;
+    if(!name) return;
 
     level=l;
     home.style.display="none";
@@ -216,15 +187,12 @@ function startGame(l){
     next();
 }
 
-// ===== 时间 =====
-function getTime(){
-    return level==1?45:level==2?30:25;
-}
+// 时间
+function getTime(){return level==1?45:level==2?30:25;}
 
 function startTimer(){
     clearInterval(timer);
     timeLeft=getTime();
-
     timer=setInterval(()=>{
         timeLeft--;
         updateUI();
@@ -232,22 +200,15 @@ function startTimer(){
     },1000);
 }
 
-// ===== 工具 =====
+// 工具
 function rand(max){return Math.floor(Math.random()*max);}
 
-// ===== 比较 =====
+// 题型
 function genCompare(max){
     let a,b;
-    do{
-        a=rand(max);
-        b=rand(max);
-    }while(a===b);
+    do{a=rand(max);b=rand(max);}while(a===b);
 
-    let type;
-    if(lastCompareType==="big") type="small";
-    else if(lastCompareType==="small") type="big";
-    else type="big";
-
+    let type=lastCompareType==="big"?"small":"big";
     lastCompareType=type;
 
     return type==="big"
@@ -255,7 +216,6 @@ function genCompare(max){
     : {type:"compare",q:`比较大小：\n${a} 和 ${b} 谁小？`,answer:String(Math.min(a,b))};
 }
 
-// ===== 排序 =====
 function genOrder(max){
     let count=level==1?3:level==2?4:5;
     let nums=Array.from({length:count},()=>rand(max));
@@ -269,47 +229,33 @@ function genOrder(max){
     }
 }
 
-// ===== 数列 =====
 function genPattern(){
     let start=rand(50),step=rand(5)+1;
-
     return Math.random()<0.5
     ? {type:"pattern",q:`找规律：\n${start} , ${start+step} , ${start+2*step} , ?`,answer:String(start+3*step)}
     : {type:"pattern",q:`找规律：\n${start} , ${start-step} , ${start-2*step} , ?`,answer:String(start-3*step)};
 }
 
-// ===== 加法 =====
 function genAdd(max){
     let a=rand(max/2),b=rand(max/2);
     return{type:"add",q:`计算：${a} + ${b}`,answer:String(a+b)}
 }
 
-// ===== 减法 =====
 function genSub(max){
     let a=rand(max),b=rand(max);
     if(a<b)[a,b]=[b,a];
     return{type:"sub",q:`计算：${a} - ${b}`,answer:String(a-b)}
 }
 
-// ===== 出题顺序 =====
 function genQ(){
     let max=level==1?100:level==2?1000:10000;
-
-    let sequence=[
-        genCompare,
-        genAdd,
-        genOrder,
-        genSub,
-        genPattern
-    ];
-
+    let sequence=[genCompare,genAdd,genOrder,genSub,genPattern];
     let fn=sequence[qIndex % sequence.length];
     qIndex++;
-
     return fn(max);
 }
 
-// ===== 下一题 =====
+// 下一题
 function next(){
     startTimer();
     currentQ=genQ();
@@ -317,58 +263,32 @@ function next(){
     answer.value="";
 }
 
-// ===== 判题 =====
+// 判题
 function normalize(s){
     return s.replace(/[^0-9]/g,",").split(",").filter(x=>x).join(",");
 }
 
 function check(){
-
     let ok=normalize(answer.value)==normalize(currentQ.answer);
 
-    stats.total++;
-    stats[currentQ.type].t++;
-
-    if(ok){
-        score+=5;
-        combo++;
-        stats.correct++;
-        stats[currentQ.type].c++;
-    }else{
-        combo=0;
-        lives--;
-    }
+    if(ok){score+=5;combo++;}
+    else{combo=0;lives--;}
 
     updateUI();
-
     if(lives<=0){endGame();return;}
     next();
 }
 
-// ===== UI =====
+// UI
 function updateUI(){
     topbar.innerText=`🍄 ${name} | ⭐${score} | ⏱${timeLeft}s | ❤️${lives}`;
     combo.innerText=combo>=2?`🔥 x${combo}`:"";
 }
 
-// ===== 重置 =====
-function reset(){
-    score=0;
-    lives=3;
-    combo=0;
+// 重置
+function reset(){score=0;lives=3;combo=0;}
 
-    stats={
-        compare:{c:0,t:0},
-        order:{c:0,t:0},
-        pattern:{c:0,t:0},
-        add:{c:0,t:0},
-        sub:{c:0,t:0},
-        total:0,
-        correct:0
-    };
-}
-
-// ===== 结束 =====
+// 结束
 function endGame(){
     clearInterval(timer);
     saveData();
@@ -376,17 +296,12 @@ function endGame(){
     location.reload();
 }
 
-// ===== 上传 =====
+// 上传
 async function saveData(){
     await fetch(DB_URL,{
         method:"POST",
         body:JSON.stringify({
-            name,
-            score,
-            correct:stats.correct,
-            total:stats.total,
-            stats:stats,
-            time:new Date().toLocaleString()
+            name,score,time:new Date().toLocaleString()
         })
     });
 }
