@@ -6,13 +6,69 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-body{margin:0;font-family:Arial;text-align:center;background:linear-gradient(#5c94fc,#87ceeb);color:white;}
-#topbar{padding:10px;font-size:18px;background:rgba(0,0,0,0.3);}
-.level-btn{font-size:20px;padding:15px 25px;margin:10px;border:none;border-radius:15px;background:white;}
-.card{width:90%;max-width:420px;margin:30px auto;padding:25px;border-radius:20px;background:white;color:black;}
-input{width:90%;padding:12px;font-size:18px;border-radius:10px;border:2px solid #ccc;}
-.submit-btn{margin-top:10px;padding:10px 20px;font-size:16px;border:none;border-radius:10px;background:#4CAF50;color:white;}
-#combo{font-size:20px;margin:10px;color:yellow;}
+body{
+    margin:0;
+    font-family:Arial;
+    text-align:center;
+    background:linear-gradient(#5c94fc,#87ceeb);
+    color:white;
+}
+
+#topbar{
+    padding:10px;
+    font-size:18px;
+    background:rgba(0,0,0,0.3);
+}
+
+.level-btn{
+    font-size:20px;
+    padding:15px 25px;
+    margin:10px;
+    border:none;
+    border-radius:15px;
+    background:white;
+}
+
+.card{
+    width:90%;
+    max-width:420px;
+    margin:30px auto;
+    padding:25px;
+    border-radius:20px;
+    background:white;
+    color:black;
+}
+
+#question{
+    font-size:20px;
+    margin-bottom:15px;
+    line-height:1.5;
+    white-space:pre-line;
+}
+
+input{
+    width:90%;
+    padding:12px;
+    font-size:18px;
+    border-radius:10px;
+    border:2px solid #ccc;
+}
+
+.submit-btn{
+    margin-top:10px;
+    padding:10px 20px;
+    font-size:16px;
+    border:none;
+    border-radius:10px;
+    background:#4CAF50;
+    color:white;
+}
+
+#combo{
+    font-size:20px;
+    margin:10px;
+    color:yellow;
+}
 </style>
 </head>
 
@@ -38,7 +94,10 @@ input{width:90%;padding:12px;font-size:18px;border-radius:10px;border:2px solid 
         <input id="answer" placeholder="输入答案">
         <br>
         <button class="submit-btn" onclick="check()">提交</button>
-        <div style="font-size:13px;color:#666;">👉 不用打逗号</div>
+
+        <div style="font-size:13px;color:#666;margin-top:5px;">
+        👉 不用打逗号，直接输入数字
+        </div>
     </div>
 </div>
 
@@ -50,8 +109,6 @@ const DB="https://y1-3-math-prt-1-default-rtdb.asia-southeast1.firebasedatabase.
 // ===== 状态 =====
 let name="",level=1,score=0,lives=3,timeLeft=0,timer;
 let currentQ,combo=0;
-
-// ✅ 新增：分析数据
 let stats;
 
 // ===== 音乐 =====
@@ -68,8 +125,8 @@ function startGame(l){
     if(!name) return;
 
     level=l;
-    document.getElementById("home").style.display="none";
-    document.getElementById("game").style.display="block";
+    home.style.display="none";
+    game.style.display="block";
 
     reset();
     startTimer();
@@ -97,29 +154,49 @@ function rand(max){return Math.floor(Math.random()*max);}
 
 function genCompare(max){
     let a=rand(max),b=rand(max);
-    return{type:"compare",q:`比较大小：${a} 和 ${b} 谁大？`,a:String(Math.max(a,b))};
+    return{
+        type:"compare",
+        q:`比较大小：\n${a} 和 ${b} 谁大？`,
+        a:String(Math.max(a,b))
+    };
 }
 
+// ⭐ 修复重点
 function genOrder(max){
     let nums=[rand(max),rand(max),rand(max)];
     let sorted=[...nums].sort((a,b)=>a-b);
-    return{type:"order",q:`排序：${nums.join(",")}`,a:sorted.join(",")};
+
+    let asc=Math.random()<0.5;
+
+    return{
+        type:"order",
+        q: asc
+        ? `从小到大排列：\n${nums.join(" , ")}`
+        : `从大到小排列：\n${nums.join(" , ")}`,
+        a: asc
+        ? sorted.join(",")
+        : sorted.reverse().join(",")
+    };
 }
 
 function genPattern(){
     let start=rand(50),step=rand(5)+1;
-    return{type:"pattern",q:`${start},${start+step},${start+2*step},?`,a:String(start+3*step)};
+    return{
+        type:"pattern",
+        q:`找规律：\n${start} , ${start+step} , ${start+2*step} , ?`,
+        a:String(start+3*step)
+    };
 }
 
 function genAdd(max){
     let a=rand(max/2),b=rand(max/2);
-    return{type:"add",q:`${a}+${b}`,a:String(a+b)};
+    return{type:"add",q:`计算：${a} + ${b}`,a:String(a+b)};
 }
 
 function genSub(max){
     let a=rand(max),b=rand(max);
     if(a<b)[a,b]=[b,a];
-    return{type:"sub",q:`${a}-${b}`,a:String(a-b)};
+    return{type:"sub",q:`计算：${a} - ${b}`,a:String(a-b)};
 }
 
 function genQ(){
@@ -142,7 +219,6 @@ function normalize(s){
 
 // ===== 判题 =====
 function check(){
-
     let ok=normalize(answer.value)==normalize(currentQ.a);
 
     stats.total++;
@@ -164,6 +240,7 @@ function check(){
     next();
 }
 
+// ===== Enter =====
 answer.addEventListener("keydown",e=>{
     if(e.key==="Enter") check();
 });
@@ -171,13 +248,14 @@ answer.addEventListener("keydown",e=>{
 // ===== UI =====
 function updateUI(){
     topbar.innerText=`🍄 ${name} | ⭐${score} | ⏱${timeLeft}s | ❤️${lives}`;
-    comboDiv=document.getElementById("combo");
-    comboDiv.innerText=combo>=2?`🔥 x${combo}`:"";
+    combo.innerText=combo>=2?`🔥 x${combo}`:"";
 }
 
 // ===== 重置 =====
 function reset(){
-    score=0; lives=3; combo=0;
+    score=0;
+    lives=3;
+    combo=0;
 
     stats={
         compare:{c:0,t:0},
@@ -198,10 +276,9 @@ function endGame(){
     location.reload();
 }
 
-// ===== ⭐核心：覆盖写入 =====
+// ===== 上传 =====
 async function saveData(){
-
-    let id=name.trim().toLowerCase();
+    let id=name.toLowerCase();
 
     await fetch(`${DB}/${id}.json`,{
         method:"PUT",
@@ -217,5 +294,6 @@ async function saveData(){
 }
 
 </script>
+
 </body>
 </html>
