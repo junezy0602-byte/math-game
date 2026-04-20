@@ -129,13 +129,15 @@ function startGame(l){
     game.style.display="block";
 
     reset();
-    startTimer();
-    next();
+    next(); // ✅ 不在这里开timer
 }
 
-// ===== 时间 =====
-function getTime(){return level==1?30:level==2?25:20;}
+// ===== 时间（已改）=====
+function getTime(){
+    return level==1?25:level==2?18:15;
+}
 
+// ===== 计时 =====
 function startTimer(){
     clearInterval(timer);
     timeLeft=getTime();
@@ -143,7 +145,10 @@ function startTimer(){
     timer=setInterval(()=>{
         timeLeft--;
         updateUI();
-        if(timeLeft<=0) endGame();
+
+        if(timeLeft<=0){
+            endGame();
+        }
     },1000);
 }
 
@@ -161,11 +166,9 @@ function genCompare(max){
     };
 }
 
-// ⭐ 修复重点
 function genOrder(max){
     let nums=[rand(max),rand(max),rand(max)];
     let sorted=[...nums].sort((a,b)=>a-b);
-
     let asc=Math.random()<0.5;
 
     return{
@@ -205,11 +208,16 @@ function genQ(){
     return list[rand(list.length)](max);
 }
 
-// ===== 下一题 =====
+// ===== 下一题（已改）=====
 function next(){
+
+    clearInterval(timer); // ✅ 停旧timer
+
     currentQ=genQ();
     question.innerText=currentQ.q;
     answer.value="";
+
+    startTimer(); // ✅ 每题重新计时
 }
 
 // ===== 输入处理 =====
