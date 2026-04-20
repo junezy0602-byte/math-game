@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>📊 老师后台</title>
+
+<style>
+body{
+    font-family:Arial;
+    background:#eef2ff;
+    text-align:center;
+}
+
+.card{
+    width:90%;
+    max-width:500px;
+    margin:15px auto;
+    padding:20px;
+    border-radius:12px;
+    background:white;
+    box-shadow:0 5px 15px rgba(0,0,0,0.2);
+}
+
+.weak{color:red;font-weight:bold;}
+.good{color:green;}
+
+button{
+    padding:10px 20px;
+    border:none;
+    border-radius:10px;
+    background:#4CAF50;
+    color:white;
+    cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📊 学生分析</h1>
+
+<div id="content">加载中...</div>
+
+<script>
+
+// ===== Firebase（用你现在的）=====
+const DB_URL = "https://y1-3-math-prt-1-default-rtdb.asia-southeast1.firebasedatabase.app/records.json";
+
+// ===== 分析函数 =====
+function analyze(stats){
+
+    let result=[];
+
+    for(let key in stats){
+        let s=stats[key];
+        if(!s || s.t===0) continue;
+
+        let rate = s.c / s.t;
+
+        if(rate < 0.5){
+            result.push(key + "弱");
+        }
+    }
+
+    return result.length ? result.join(" / ") : "表现均衡";
+}
+
+// ===== 加载数据 =====
+async function load(){
+
+    try{
+        let res = await fetch(DB_URL);
+        let data = await res.json();
+
+        let html="";
+
+        if(!data){
+            html="⚠️ 没有数据";
+        }else{
+            for(let id in data){
+
+                let d=data[id];
+
+                let weak="无数据";
+
+                if(d.stats){
+                    weak = analyze(d.stats);
+                }
+
+                html+=`
+                <div class="card">
+                    <b>${d.name}</b><br>
+                    分数：${d.score}<br>
+                    正确：${d.correct || 0}/${d.total || 0}<br>
+                    👉 弱点：<span class="${weak.includes('弱')?'weak':'good'}">${weak}</span>
+                </div>
+                `;
+            }
+        }
+
+        document.getElementById("content").innerHTML=html;
+
+    }catch(e){
+        document.getElementById("content").innerHTML="❌ 读取失败";
+    }
+}
+
+load();
+
+</script>
+
+</body>
+</html>
