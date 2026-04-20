@@ -12,11 +12,9 @@ body{
     text-align:center;
     margin:0;
 }
-
 h1{
     margin:20px;
 }
-
 .card{
     width:90%;
     max-width:420px;
@@ -27,16 +25,15 @@ h1{
     box-shadow:0 5px 15px rgba(0,0,0,0.2);
     text-align:left;
 }
-
 .delete-btn{
     margin-top:10px;
     background:red;
     color:white;
     border:none;
-    padding:6px 12px;
-    border-radius:8px;
+    padding:8px 14px;
+    border-radius:10px;
+    font-size:14px;
 }
-
 .clear-btn{
     margin:15px;
     background:black;
@@ -61,6 +58,17 @@ h1{
 
 const DB="https://y1-3-math-prt-1-default-rtdb.asia-southeast1.firebasedatabase.app/records";
 
+// ===== 教学翻译 =====
+function translate(t){
+    return {
+        compare:"比较",
+        order:"排序",
+        pattern:"规律",
+        add:"加法",
+        sub:"减法"
+    }[t]||"无数据";
+}
+
 // ===== 读取数据 =====
 async function load(){
 
@@ -81,7 +89,7 @@ async function load(){
         sub:0
     };
 
-    Object.values(data).forEach(s=>{
+    Object.entries(data).forEach(([id,s])=>{
 
         // ❗过滤垃圾数据
         if(!s.name || s.name==="." || s.name.trim()==="") return;
@@ -106,7 +114,9 @@ async function load(){
 
             if(rates.length>0){
                 rates.sort((a,b)=>b.rate-a.rate);
-                weak=rates[0].type+"弱 ("+Math.round(rates[0].rate*100)+"%)";
+
+                weak = translate(rates[0].type) + 
+                "弱 (" + Math.round(rates[0].rate*100) + "%)";
 
                 weakCount[rates[0].type]++;
             }
@@ -120,7 +130,7 @@ async function load(){
             👉 ${weak}
 
             <br>
-            <button class="delete-btn" onclick="deleteStudent('${s.name}')">
+            <button class="delete-btn" onclick="deleteStudent('${id}')">
             删除
             </button>
         </div>
@@ -143,12 +153,10 @@ async function load(){
     weak.innerHTML=`👉 全班最弱：${translate(worst)}`;
 }
 
-// ===== 删除单个 =====
-async function deleteStudent(name){
+// ===== 删除单个（🔥关键修复：用 id，不用 name）=====
+async function deleteStudent(id){
 
     if(!confirm("确定删除这个学生？")) return;
-
-    let id=name.toLowerCase();
 
     await fetch(`${DB}/${id}.json`,{
         method:"DELETE"
@@ -169,17 +177,6 @@ async function clearAll(){
 
     alert("已清空");
     location.reload();
-}
-
-// ===== 翻译 =====
-function translate(t){
-    return {
-        compare:"比较",
-        order:"排序",
-        pattern:"规律",
-        add:"加法",
-        sub:"减法"
-    }[t]||"无数据";
 }
 
 // ===== 启动 =====
