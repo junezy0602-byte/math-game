@@ -2,8 +2,9 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🍄 数学大冒险 Ultimate</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 body{
@@ -14,47 +15,56 @@ body{
     color:white;
 }
 
+/* 顶部 */
 #topbar{
-    font-size:18px;
     padding:10px;
+    font-size:18px;
     background:rgba(0,0,0,0.3);
 }
 
+/* Level */
 .level-btn{
     font-size:20px;
-    padding:15px 20px;
+    padding:15px 25px;
     margin:10px;
-    border-radius:12px;
     border:none;
+    border-radius:15px;
+    background:white;
 }
 
+/* 卡片 */
 .card{
     width:90%;
     max-width:420px;
-    margin:40px auto;
-    padding:20px;
+    margin:30px auto;
+    padding:25px;
     border-radius:20px;
     background:white;
     color:black;
+    box-shadow:0 10px 30px rgba(0,0,0,0.3);
 }
 
 input{
-    font-size:26px;
-    padding:15px;
     width:90%;
-    margin-top:15px;
+    padding:12px;
+    font-size:18px;
+    border-radius:10px;
+    border:2px solid #ccc;
 }
 
 .submit-btn{
     margin-top:10px;
-    font-size:20px;
-    padding:12px 25px;
+    padding:10px 20px;
+    font-size:16px;
     border:none;
     border-radius:10px;
+    background:#4CAF50;
+    color:white;
 }
 
 #combo{
-    font-size:24px;
+    font-size:20px;
+    margin:10px;
     color:yellow;
 }
 </style>
@@ -62,107 +72,98 @@ input{
 
 <body>
 
-<h1>🍄 数学大冒险</h1>
+<!-- 🎵 音乐 -->
+<audio id="bgm" loop preload="auto">
+<source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_115b9b3b3c.mp3">
+</audio>
 
-<button class="level-btn" onclick="startGame(1)">Level 1</button>
-<button class="level-btn" onclick="startGame(2)">Level 2</button>
-<button class="level-btn" onclick="startGame(3)">Level 3</button>
+<div id="home">
+    <h1>🍄 数学大冒险</h1>
+    <button class="level-btn" onclick="startGame(1)">🌍 Level 1</button>
+    <button class="level-btn" onclick="startGame(2)">🌍 Level 2</button>
+    <button class="level-btn" onclick="startGame(3)">🌍 Level 3</button>
+</div>
 
 <div id="game" style="display:none;">
     <div id="topbar"></div>
     <div id="combo"></div>
 
     <div class="card">
-        <div id="question"></div>
+        <div id="question" style="font-size:20px;margin-bottom:10px;"></div>
 
-        <input id="answer" inputmode="numeric">
+        <input id="answer" placeholder="输入答案">
+
+        <br>
         <button class="submit-btn" onclick="check()">提交</button>
+
+        <div style="font-size:13px;color:#666;margin-top:5px;">
+        👉 不用打逗号，直接输入数字
+        </div>
     </div>
 </div>
 
 <script>
 
-// ===== DOM =====
-let topbar, question, answer, comboDiv;
-
-window.onload = function(){
-    topbar = document.getElementById("topbar");
-    question = document.getElementById("question");
-    answer = document.getElementById("answer");
-    comboDiv = document.getElementById("combo");
-
-    // 电脑Enter
-    answer.addEventListener("keydown", function(e){
-        if(e.key === "Enter"){
-            check();
-        }
-    });
-
-    // 手机音频解锁
-    document.body.addEventListener("click",()=>{
-        ctx.resume();
-    },{once:true});
-};
-
-// ===== 音频 =====
-const ctx = new (window.AudioContext||window.webkitAudioContext)();
-let started=false;
-
-function playTone(freq){
-    let o=ctx.createOscillator();
-    let g=ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.frequency.value=freq;
-    g.gain.value=0.05;
-    o.start();
-    o.stop(ctx.currentTime+0.1);
-}
-
-function startBGM(){
-    if(started) return;
-    started=true;
-
-    setInterval(()=>{
-        playTone(300+Math.random()*400);
-    },300);
-}
+// ===== Firebase =====
+const DB_URL="https://y1-3-math-prt-1-default-rtdb.asia-southeast1.firebasedatabase.app/records.json";
 
 // ===== 状态 =====
-let name="",level=1,score=0,lives=3,combo=0;
-let timeLeft=0,timer=null,currentQ;
+let name="",level=1,score=0,lives=3,timeLeft=0,timer;
+let currentQ,combo=0;
+
+// ===== 🎵 音乐（最终稳定版）=====
+let audioStarted=false;
+
+function playMusic(){
+    if(audioStarted) return;
+
+    const bgm=document.getElementById("bgm");
+
+    function startAudio(){
+        bgm.play().then(()=>{
+            audioStarted=true;
+            document.removeEventListener("click",startAudio);
+            document.removeEventListener("touchstart",startAudio);
+        }).catch(()=>{});
+    }
+
+    document.addEventListener("click",startAudio);
+    document.addEventListener("touchstart",startAudio);
+
+    startAudio();
+}
 
 // ===== 开始 =====
 function startGame(l){
-    name = prompt("输入名字");
+    playMusic();
+
+    name=prompt("输入名字");
     if(!name) return;
 
-    startBGM();
-
     level=l;
+    document.getElementById("home").style.display="none";
     document.getElementById("game").style.display="block";
 
     reset();
+    startTimer();
     next();
 }
 
 // ===== 时间 =====
 function getTime(){
-    return level===1?30:level===2?20:15;
+    return level==1?30:level==2?25:20;
 }
 
 function startTimer(){
     clearInterval(timer);
     timeLeft=getTime();
-    updateUI();
 
     timer=setInterval(()=>{
         timeLeft--;
         updateUI();
 
         if(timeLeft<=0){
-            clearInterval(timer);
-            combo=0;
-            next();
+            endGame();
         }
     },1000);
 }
@@ -171,92 +172,119 @@ function startTimer(){
 function rand(max){return Math.floor(Math.random()*max);}
 
 // ===== 题型 =====
-function genCompare(max){
-    let a=rand(max), b=rand(max);
-    let askBig=Math.random()<0.5;
 
-    return {
-        q: askBig
-            ? `比较大小\n${a} 和 ${b}，谁大？`
-            : `比较大小\n${a} 和 ${b}，谁小？`,
-        answer: askBig?String(Math.max(a,b)):String(Math.min(a,b))
-    };
+// 比较
+function genCompare(max){
+    let a=rand(max),b=rand(max);
+    return{
+        q:`比较大小：${a} 和 ${b} 谁大？`,
+        answer:String(Math.max(a,b))
+    }
 }
 
+// 排序（清晰版）
 function genOrder(max){
-    let nums=[rand(max),rand(max),rand(max)];
+    let nums=Array.from({length:3},()=>rand(max));
     let sorted=[...nums].sort((a,b)=>a-b);
+
     let asc=Math.random()<0.5;
 
-    return {
-        q: asc
-            ? `从小到大排列：\n${nums.join(" , ")}`
-            : `从大到小排列：\n${nums.join(" , ")}`,
-        answer: asc?sorted.join(","):sorted.reverse().join(",")
-    };
+    return{
+        q:asc
+        ? `从小到大排列：\n${nums.join(" , ")}`
+        : `从大到小排列：\n${nums.join(" , ")}`,
+        answer:asc?sorted.join(","):sorted.reverse().join(",")
+    }
 }
 
+// 规律
 function genPattern(max){
-    let s=rand(max/2),step=rand(5)+1;
+    let start=rand(50);
+    let step=rand(5)+1;
 
-    return {
-        q:`找规律\n${s}, ${s+step}, ${s+2*step}, ?`,
-        answer:String(s+3*step)
-    };
+    return{
+        q:`找规律：${start} , ${start+step} , ${start+2*step} , ?`,
+        answer:String(start+3*step)
+    }
 }
 
+// 加法
+function genAdd(max){
+    let a=rand(max/2),b=rand(max/2);
+    return{
+        q:`计算：${a} + ${b}`,
+        answer:String(a+b)
+    }
+}
+
+// 减法
+function genSub(max){
+    let a=rand(max),b=rand(max);
+    if(a<b)[a,b]=[b,a];
+    return{
+        q:`计算：${a} - ${b}`,
+        answer:String(a-b)
+    }
+}
+
+// ===== 总题库 =====
 function genQ(){
-    let max=level===1?100:level===2?1000:10000;
-    let types=[genCompare,genOrder,genPattern];
-    return types[Math.floor(Math.random()*3)](max);
+    let max=level==1?100:level==2?1000:10000;
+    let list=[genCompare,genOrder,genPattern,genAdd,genSub];
+    return list[rand(list.length)](max);
 }
 
 // ===== 下一题 =====
 function next(){
     currentQ=genQ();
-    question.innerHTML=currentQ.q.replace(/\n/g,"<br>");
-    answer.value="";
-    answer.focus();
-    startTimer();
+    document.getElementById("question").innerText=currentQ.q;
+    document.getElementById("answer").value="";
 }
 
-// ===== 判题 =====
+// ===== 手机输入处理 =====
 function normalize(s){
-    return s.replace(/，/g,",").replace(/\s+/g,",")
-    .split(",").map(x=>x.trim()).filter(x=>x).join(",");
+    return s.replace(/[^0-9]/g,",")
+        .split(",")
+        .map(x=>x.trim())
+        .filter(x=>x)
+        .join(",");
 }
 
+// ===== 判定 =====
 function check(){
+    let input=normalize(answer.value);
+    let correct=normalize(currentQ.answer);
 
-    clearInterval(timer);
-
-    let correct=normalize(answer.value)===normalize(currentQ.answer);
-
-    if(correct){
+    if(input===correct){
         score+=5;
         combo++;
-        comboDiv.innerText="🔥 x"+combo;
-        playTone(800);
     }else{
         combo=0;
         lives--;
-        playTone(200);
     }
 
     updateUI();
 
     if(lives<=0){
-        alert("游戏结束！");
-        location.reload();
+        endGame();
         return;
     }
 
-    setTimeout(next,300);
+    next();
 }
+
+// ===== Enter 支持 =====
+document.getElementById("answer").addEventListener("keydown",e=>{
+    if(e.key==="Enter") check();
+});
 
 // ===== UI =====
 function updateUI(){
-    topbar.innerText=`🪙${score} | ⏱️${timeLeft}s | ❤️${lives}`;
+    document.getElementById("topbar").innerText=
+    `🍄 ${name} | ⭐${score} | ⏱${timeLeft}s | ❤️${lives}`;
+
+    document.getElementById("combo").innerText=
+    combo>=2?`🔥 x${combo}`:"";
 }
 
 // ===== 重置 =====
@@ -264,6 +292,24 @@ function reset(){
     score=0;
     lives=3;
     combo=0;
+}
+
+// ===== 结束 =====
+function endGame(){
+    clearInterval(timer);
+    saveData();
+    alert("游戏结束");
+    location.reload();
+}
+
+// ===== 上传 =====
+async function saveData(){
+    await fetch(DB_URL,{
+        method:"POST",
+        body:JSON.stringify({
+            name,score,time:new Date().toLocaleString()
+        })
+    });
 }
 
 </script>
