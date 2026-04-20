@@ -25,6 +25,11 @@ body{
     border:none;
     border-radius:15px;
     background:white;
+    transition:0.2s;
+}
+.level-btn:hover{
+    transform:scale(1.1);
+    cursor:pointer;
 }
 .card{
     width:90%;
@@ -66,12 +71,39 @@ input{
   <source src="bgm.mp3" type="audio/mpeg">
 </audio>
 
-<div id="home">
-    <h1>🍄 数学大冒险</h1>
-    <button class="level-btn" onclick="startGame(1)">🌍 Level 1</button>
-    <button class="level-btn" onclick="startGame(2)">🌍 Level 2</button>
-    <button class="level-btn" onclick="startGame(3)">🌍 Level 3</button>
+<!-- ⭐⭐⭐ 只改这里（封面升级）⭐⭐⭐ -->
+<div id="home" style="padding-top:40px;">
+
+    <h1 style="font-size:34px;">🍄 数学大冒险</h1>
+
+    <p style="font-size:18px;margin:10px 0;">
+        ⚡ 数学反应挑战开始！
+    </p>
+
+    <p style="font-size:15px;">
+        你能在时间内答对多少题？
+    </p>
+
+    <div style="margin-top:25px;">
+        <button class="level-btn" onclick="startGame(1)">
+            🟢 新手挑战
+        </button>
+
+        <button class="level-btn" onclick="startGame(2)">
+            🔵 进阶挑战
+        </button>
+
+        <button class="level-btn" onclick="startGame(3)">
+            🔴 大师挑战
+        </button>
+    </div>
+
+    <div style="margin-top:25px;font-size:14px;color:#eee;">
+        ⏱ 限时作答 &nbsp;&nbsp; ❤️ 3次机会 &nbsp;&nbsp; 🔥 连击加分
+    </div>
+
 </div>
+<!-- ⭐⭐⭐ 封面结束 ⭐⭐⭐ -->
 
 <div id="game" style="display:none;">
     <div id="topbar"></div>
