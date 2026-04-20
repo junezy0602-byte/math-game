@@ -87,6 +87,7 @@ input{
         <input id="answer" placeholder="输入答案">
         <br>
         <button class="submit-btn" onclick="check()">提交</button>
+
         <div style="font-size:13px;color:#666;margin-top:5px;">
         👉 不用打逗号
         </div>
@@ -102,10 +103,18 @@ const DB="https://y1-3-math-prt-1-default-rtdb.asia-southeast1.firebasedatabase.
 let name="",level=1,score=0,lives=3,timeLeft=0,timer;
 let currentQ,combo=0,stats;
 
-// ===== 音乐 =====
+// ===== 音乐（手机兼容）=====
 function playMusic(){
     const bgm=document.getElementById("bgm");
-    document.addEventListener("click",()=>bgm.play(),{once:true});
+
+    function start(){
+        bgm.play().catch(()=>{});
+        document.removeEventListener("click",start);
+        document.removeEventListener("touchstart",start);
+    }
+
+    document.addEventListener("click",start);
+    document.addEventListener("touchstart",start);
 }
 
 // ===== 开始 =====
@@ -113,14 +122,21 @@ function startGame(l){
     playMusic();
 
     name=prompt("输入名字");
-    if(!name) return;
+
+    // ✅ 防垃圾数据（已整合）
+    if(!name || name.trim()==="" || name==="."){
+        alert("请输入正确名字");
+        return;
+    }
+
+    name = name.trim();
 
     level=l;
     home.style.display="none";
     game.style.display="block";
 
     reset();
-    next(); // ⭐ 只由 next 控制时间
+    next();
 }
 
 // ===== 时间（每题）=====
@@ -199,16 +215,15 @@ function genQ(){
     return list[rand(list.length)](max);
 }
 
-// ===== 下一题（核心）=====
+// ===== 下一题 =====
 function next(){
-
     clearInterval(timer);
 
     currentQ=genQ();
     question.innerText=currentQ.q;
     answer.value="";
 
-    startTimer(); // ⭐ 每题开始计时
+    startTimer();
 }
 
 // ===== 输入处理 =====
