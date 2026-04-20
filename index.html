@@ -14,13 +14,11 @@ body{
     background:linear-gradient(#5c94fc,#87ceeb);
     color:white;
 }
-
 #topbar{
     padding:10px;
     font-size:18px;
     background:rgba(0,0,0,0.3);
 }
-
 .level-btn{
     font-size:20px;
     padding:15px 25px;
@@ -29,7 +27,6 @@ body{
     border-radius:15px;
     background:white;
 }
-
 .card{
     width:90%;
     max-width:420px;
@@ -40,7 +37,6 @@ body{
     color:black;
     box-shadow:0 10px 30px rgba(0,0,0,0.3);
 }
-
 input{
     width:90%;
     padding:12px;
@@ -48,7 +44,6 @@ input{
     border-radius:10px;
     border:2px solid #ccc;
 }
-
 .submit-btn{
     margin-top:10px;
     padding:10px 20px;
@@ -58,7 +53,6 @@ input{
     background:#4CAF50;
     color:white;
 }
-
 #combo{
     font-size:20px;
     margin:10px;
@@ -69,7 +63,6 @@ input{
 
 <body>
 
-<!-- 🎵 音乐 -->
 <audio id="bgm" loop preload="auto">
   <source src="bgm.mp3" type="audio/mpeg">
 </audio>
@@ -87,47 +80,33 @@ input{
 
     <div class="card">
         <div id="question" style="font-size:20px;margin-bottom:10px;white-space:pre-line;"></div>
-
         <input id="answer" placeholder="输入答案">
-
         <br>
         <button class="submit-btn" onclick="check()">提交</button>
-
         <div style="font-size:13px;color:#666;margin-top:5px;">
-        👉 不用打逗号，直接输入数字
+        👉 不用打逗号
         </div>
     </div>
 </div>
 
 <script>
 
-// ===== Firebase =====
 const DB_URL="https://y1-3-math-prt-1-default-rtdb.asia-southeast1.firebasedatabase.app/records.json";
 
-// ===== 状态 =====
 let name="",level=1,score=0,lives=3,timeLeft=0,timer;
 let currentQ,combo=0;
 
-// ===== 🎵 音乐 =====
+// ===== 音乐 =====
 let audioStarted=false;
-
 function playMusic(){
     if(audioStarted) return;
-
     const bgm=document.getElementById("bgm");
 
-    function startAudio(){
-        bgm.play().then(()=>{
-            audioStarted=true;
-            document.removeEventListener("click",startAudio);
-            document.removeEventListener("touchstart",startAudio);
-        }).catch(()=>{});
+    function start(){
+        bgm.play().catch(()=>{});
+        document.removeEventListener("click",start);
     }
-
-    document.addEventListener("click",startAudio);
-    document.addEventListener("touchstart",startAudio);
-
-    startAudio();
+    document.addEventListener("click",start);
 }
 
 // ===== 开始 =====
@@ -135,21 +114,19 @@ function startGame(l){
     playMusic();
 
     name=prompt("输入名字");
-    if(!name) return;
+    if(!name || name.trim()==="") return;
 
     level=l;
-    document.getElementById("home").style.display="none";
-    document.getElementById("game").style.display="block";
+    home.style.display="none";
+    game.style.display="block";
 
     reset();
-    next(); // ⭐ 改这里（不先开timer）
+    next();
 }
 
-// ===== ⏱ 时间（已修改）=====
+// ===== 时间 =====
 function getTime(){
-    return level==1 ? 45 :
-           level==2 ? 30 :
-           25;
+    return level==1?45:level==2?30:25;
 }
 
 function startTimer(){
@@ -159,28 +136,34 @@ function startTimer(){
     timer=setInterval(()=>{
         timeLeft--;
         updateUI();
-
-        if(timeLeft<=0){
-            endGame();
-        }
+        if(timeLeft<=0) endGame();
     },1000);
 }
 
 // ===== 工具 =====
 function rand(max){return Math.floor(Math.random()*max);}
 
-// ===== 题型 =====
+// ===== 题型升级 =====
 
 function genCompare(max){
     let a=rand(max),b=rand(max);
-    return{
-        q:`比较大小：${a} 和 ${b} 谁大？`,
-        answer:String(Math.max(a,b))
+
+    if(Math.random()<0.5){
+        return{
+            q:`比较大小：\n${a} 和 ${b} 谁大？`,
+            answer:String(Math.max(a,b))
+        }
+    }else{
+        return{
+            q:`比较大小：\n${a} 和 ${b} 谁小？`,
+            answer:String(Math.min(a,b))
+        }
     }
 }
 
 function genOrder(max){
-    let nums=Array.from({length:3},()=>rand(max));
+    let count = level==1?2:level==2?3:4;
+    let nums=Array.from({length:count},()=>rand(max));
     let sorted=[...nums].sort((a,b)=>a-b);
     let asc=Math.random()<0.5;
 
@@ -192,58 +175,67 @@ function genOrder(max){
     }
 }
 
-function genPattern(max){
+function genPattern(){
     let start=rand(50);
     let step=rand(5)+1;
 
-    return{
-        q:`找规律：${start} , ${start+step} , ${start+2*step} , ?`,
-        answer:String(start+3*step)
+    if(Math.random()<0.5){
+        return{
+            q:`找规律：\n${start} , ${start+step} , ${start+2*step} , ?`,
+            answer:String(start+3*step)
+        }
+    }else{
+        return{
+            q:`找规律：\n${start} , ${start-step} , ${start-2*step} , ?`,
+            answer:String(start-3*step)
+        }
     }
 }
 
 function genAdd(max){
     let a=rand(max/2),b=rand(max/2);
+    if(level>=2){ a=rand(90)+10; b=rand(90)+10; }
     return{q:`计算：${a} + ${b}`,answer:String(a+b)}
 }
 
 function genSub(max){
     let a=rand(max),b=rand(max);
+    if(level>=2){ a=rand(90)+10; b=rand(90); }
     if(a<b)[a,b]=[b,a];
     return{q:`计算：${a} - ${b}`,answer:String(a-b)}
 }
 
 function genQ(){
     let max=level==1?100:level==2?1000:10000;
-    let list=[genCompare,genOrder,genPattern,genAdd,genSub];
-    return list[rand(list.length)](max);
+
+    let pool=[
+        genCompare,genCompare,
+        genOrder,
+        genPattern,
+        genAdd,genAdd,
+        genSub
+    ];
+
+    return pool[rand(pool.length)](max);
 }
 
-// ===== 下一题（⭐关键：每题重置时间）=====
+// ===== 下一题 =====
 function next(){
-
-    startTimer(); // ⭐ 每一题重新计时
-
+    startTimer();
     currentQ=genQ();
-    document.getElementById("question").innerText=currentQ.q;
-    document.getElementById("answer").value="";
-}
-
-// ===== 输入处理 =====
-function normalize(s){
-    return s.replace(/[^0-9]/g,",")
-        .split(",")
-        .map(x=>x.trim())
-        .filter(x=>x)
-        .join(",");
+    question.innerText=currentQ.q;
+    answer.value="";
 }
 
 // ===== 判题 =====
-function check(){
-    let input=normalize(answer.value);
-    let correct=normalize(currentQ.answer);
+function normalize(s){
+    return s.replace(/[^0-9]/g,",").split(",").filter(x=>x).join(",");
+}
 
-    if(input===correct){
+function check(){
+    let ok=normalize(answer.value)==normalize(currentQ.answer);
+
+    if(ok){
         score+=5;
         combo++;
     }else{
@@ -253,26 +245,18 @@ function check(){
 
     updateUI();
 
-    if(lives<=0){
-        endGame();
-        return;
-    }
-
+    if(lives<=0){endGame();return;}
     next();
 }
 
-// ===== Enter =====
-document.getElementById("answer").addEventListener("keydown",e=>{
+answer.addEventListener("keydown",e=>{
     if(e.key==="Enter") check();
 });
 
 // ===== UI =====
 function updateUI(){
-    document.getElementById("topbar").innerText=
-    `🍄 ${name} | ⭐${score} | ⏱${timeLeft}s | ❤️${lives}`;
-
-    document.getElementById("combo").innerText=
-    combo>=2?`🔥 x${combo}`:"";
+    topbar.innerText=`🍄 ${name} | ⭐${score} | ⏱${timeLeft}s | ❤️${lives}`;
+    combo.innerText=combo>=2?`🔥 x${combo}`:"";
 }
 
 // ===== 重置 =====
