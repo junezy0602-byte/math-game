@@ -22,7 +22,6 @@ body{
     background-attachment:fixed;
 }
 
-/* ⭐ 云朵动画 */
 .cloud{
     position:fixed;
     top:0;
@@ -30,7 +29,6 @@ body{
     opacity:0.7;
     animation:cloudMove 60s linear infinite;
 }
-
 .cloud:nth-child(1){ top:50px; left:-200px; animation-duration:60s;}
 .cloud:nth-child(2){ top:150px; left:-300px; animation-duration:80s;}
 .cloud:nth-child(3){ top:250px; left:-250px; animation-duration:70s;}
@@ -40,7 +38,6 @@ body{
     to{ transform:translateX(120vw);}
 }
 
-/* ⭐ 标题浮动 */
 @keyframes float{
     0%{transform:translateY(0);}
     50%{transform:translateY(-10px);}
@@ -109,7 +106,6 @@ input{
 
 <body>
 
-<!-- ⭐ 云朵（不用图片，直接emoji稳定） -->
 <div class="cloud">☁️☁️☁️</div>
 <div class="cloud">☁️☁️</div>
 <div class="cloud">☁️☁️☁️☁️</div>
@@ -118,9 +114,7 @@ input{
   <source src="bgm.mp3" type="audio/mpeg">
 </audio>
 
-<!-- ⭐ 封面 -->
 <div id="home" style="padding-top:70px;">
-
     <h1 style="
         font-size:42px;
         text-shadow:0 5px 20px rgba(0,0,0,0.5);
@@ -157,7 +151,6 @@ input{
     <div style="margin-top:40px;font-size:15px;">
         ⏱ 限时作答 &nbsp;&nbsp; ❤️ 3次机会 &nbsp;&nbsp; 🔥 连击加分
     </div>
-
 </div>
 
 <div id="game" style="display:none;">
@@ -188,6 +181,13 @@ let lastCompareType=null;
 let qIndex=0;
 let stats;
 
+// ===== 🎯 修复 Enter（只加这一段）=====
+document.addEventListener("keydown", function(e){
+    if(e.key === "Enter"){
+        check();
+    }
+});
+
 // ===== 音乐 =====
 let audioStarted=false;
 function playMusic(){
@@ -216,7 +216,7 @@ function startGame(l){
     next();
 }
 
-// ===== 时间（每题）=====
+// ===== 时间 =====
 function getTime(){
     return level==1?45:level==2?30:25;
 }
