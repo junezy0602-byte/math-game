@@ -160,15 +160,13 @@ const DB_URL="https://y1-3-math-prt-1-default-rtdb.asia-southeast1.firebasedatab
 let name="",level=1,score=0,lives=3,timeLeft=0,timer;
 let currentQ,combo=0,lastCompareType=null,qIndex=0,stats;
 
-// Enter
+// Enter键
 document.addEventListener("keydown",e=>{
     if(e.key==="Enter") check();
 });
 
 // 音乐
-let audioStarted=false;
 function playMusic(){
-    if(audioStarted) return;
     const bgm=document.getElementById("bgm");
     document.addEventListener("click",()=>bgm.play(),{once:true});
 }
@@ -203,7 +201,7 @@ function startTimer(){
 // 工具
 function rand(max){return Math.floor(Math.random()*max);}
 
-// 题型
+// ===== 题型 =====
 function genCompare(max){
     let a,b;
     do{a=rand(max);b=rand(max);}while(a===b);
@@ -273,7 +271,6 @@ function check(){
 
     let ok=normalize(answer.value)==normalize(currentQ.answer);
 
-    // ⭐记录数据
     stats.total++;
     stats[currentQ.type].t++;
 
@@ -316,15 +313,23 @@ function reset(){
     };
 }
 
-// 结束
+// 结束（防无数据）
 function endGame(){
+
+    const types=["compare","order","pattern","add","sub"];
+    types.forEach(type=>{
+        if(!stats[type]){
+            stats[type]={c:0,t:0};
+        }
+    });
+
     clearInterval(timer);
     saveData();
     alert("游戏结束");
     location.reload();
 }
 
-// 上传（关键）
+// 上传
 async function saveData(){
     await fetch(DB_URL,{
         method:"POST",
